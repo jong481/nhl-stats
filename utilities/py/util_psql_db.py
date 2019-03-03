@@ -3,85 +3,185 @@ from sqlalchemy import create_engine
 import psycopg2
 import pandas as pd
 
-def createEngine(host, port, user, pw, db):
-    engine = create_engine('postgresql://{0}:{1}@{2}:{3}/{4}'.format(user, pw, host, port, db))
+class UtilPostgreSQL:
+    """
+    Class used to represent a PostgreSQL connection to a single database
+    """
     
-    return engine
-
-def writeDF(df, host, port, user, pw, db, tb, mode):
-    engine = createEngine(host, port, user, pw, db)
-    df.to_sql(tb, engine, if_exists=mode)
-    
-def queryToDF(host, port, user, pw, db, query):
-    engine = createEngine(host, port, user, pw, db)
-    return pd.read_sql_query(query, con=engine)
-
-def createConn(host, port, user, pw, db):
-    params = {
-      'database': db,
-      'user': user,
-      'password': pw,
-      'host': host,
-      'port': port
-    }
-    
-    conn = psycopg2.connect(**params)
-    return conn
-
-def closeConn(conn):
-    conn.close()
+    def __init__(self, host, port, user, pw, db):
+        """
+        Parameters
+        ----------
+        host : str
+            host name of PostgreSQL database
+        port : int
+            port for the PostgreSQL database
+        user : str
+            user name used for connecting to the database
+        pw : str
+            password used for connecting to the database
+        db : str
+            database to establish connection
+        """
         
-def execQuery(host, port, user, pw, db, query):
-    
-    conn = createConn(host, port, user, pw, db)
-    cur = conn.cursor()
-
-    cur.execute(query)
-    res = cur.fetchall()
-    
-    closeConn(conn)
-    
-    return res
-
-def renameTable(host, port, user, pw, db, table_from, table_to):
-    
-    conn = createConn(host, port, user, pw, db)
-    cur = conn.cursor()
-
-    cur.execute('ALTER TABLE {0} RENAME TO {1}'.format(table_from, table_to))
-    
-    conn.commit()
-    closeConn(conn)
-    
-    return True
-
-def dropTable(host, port, user, pw, db, table):
-    
-    conn = createConn(host, port, user, pw, db)
-    cur = conn.cursor()
-
-    cur.execute('DROP TABLE {0}'.format(table))
-    
-    conn.commit()
-    closeConn(conn)
-    
-    return True
-
-'''
-NHL Utilities
-'''
-
-def nhl_getGameIDByDate(host, port, user, pw, db, tb, date_col, tgt_date):
-    conn = createConn(host, port, user, pw, db)
-    cur = conn.cursor()
+        self.host = host
+        self.port = port
+        self.user = user
+        self.pw = pw
+        self.db = db
         
-    cur.execute("SELECT distinct _id FROM {1} WHERE {0}='{2}'".format(date_col, tb, tgt_date))
-    res = cur.fetchall()
+        self.params = {
+            'database': db,
+            'user': user,
+            'password': pw,
+            'host': host,
+            'port': port
+        }
+        
+    def createSQLAlchemyEngine(self):
+        """Creates a SQL Alchemy Engine with the specified connection parameters
+        
+        Returns
+        -------
+        engine : SQL Alchemy Engine
+            engine to be used for SQL Alchemy Connections
+        """
+        
+        engine = create_engine('postgresql://{0}:{1}@{2}:{3}/{4}'.format(self.user, self.pw, self.host, self.port, self.db))
     
-    closeConn(conn)
+        return engine
     
-    res_list = []
-    for r in res:
-        res_list.append(r[0])
+    def createNativeConnection(self):
+        """Creates a pyscopg2 connection with the specified connection parameters
+        
+        Returns
+        -------
+        conn : pyscopg2 Connection
+            connection object to be used for pyscopg2 commands
+        cur : pyscopg2 Cursor
+            cursor object to be used for pyscopg2 commands
+        """
     
-    return res_list
+        conn = psycopg2.connect(**self.params)
+        cur = conn.cursor()
+        
+        return conn, cur
+        
+    def dropTable(self, table):
+        """Drops a specified PostgreSQL table
+        
+        Parameters
+        ----------
+        table : str
+            name of table to be dropped
+        
+        Returns
+        -------
+        bool : True if successful, False if error
+            indicates if command is successfully completed
+        """
+        
+        conn, cur = self.createNativeConnection()
+        
+        try:
+            cur.execute('DROP TABLE {0}'.format(table))
+            conn.commit()
+            
+            return True
+        except:
+            return False
+        finally:
+            conn.close()
+            
+    def renameTable(self, table_from, table_to):
+        """Renames a specified PostgreSQL table
+        
+        Parameters
+        ----------
+        table_from : str
+            name of the table to be renamed
+        table_to : str
+            new name of table
+        
+        Returns
+        -------
+        bool : True if successful, False if error
+            indicates if command is successfully completed
+        """
+        
+        conn, cur = self.createNativeConnection()
+        
+        try:
+            cur.execute('ALTER TABLE {0} RENAME TO {1}'.format(table_from, table_to))
+            conn.commit()
+            
+            return True
+        except:
+            return False
+        finally:
+            conn.close()
+        
+    def execQuery(self, query):
+        """Executes a specified query
+        
+        Parameters
+        ----------
+        query : str
+            query string to be executed against the specified database 
+            
+        Returns
+        -------
+        res : query result
+            psycopg2 result object containing query results
+        """
+        
+        conn, cur = self.createNativeConnection()
+        
+        cur.execute(query)
+        res = cur.fetchall()
+
+        conn.close()
+
+        return res
+    
+    def writeDFToTable(self, df, table, mode):
+        """Writes a Pandas Dataframe to a PostgreSQL table with the specified mode and table name
+        
+        Parameters
+        ----------
+        df : pandas dataframe
+            dataframe containing the records to be written
+        table : str
+            name of table to be written to
+        mode : str
+            replace or append
+            
+        Returns
+        -------
+        bool : True if successful, False if error
+            indicates if command is successfully completed
+        """
+        
+        engine = self.createSQLAlchemyEngine()
+        try: 
+            df.to_sql(table, engine, if_exists=mode)
+            return True
+        except Exception as e:
+            return False
+        
+    def queryToDF(self, query):
+        """Executes a query and returns the results in a Pandas dataframe object
+        
+        Parameters
+        ----------
+        query : str
+            query to be executed
+            
+        Returns
+        -------
+        df : pandas dataframe
+            dataframe containing the query results
+        """
+        
+        engine = self.createSQLAlchemyEngine()
+        return pd.read_sql_query(query, con=engine)
