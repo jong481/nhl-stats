@@ -1,0 +1,4 @@
+2019-03-02 20:34:27 INFO     START initial_load_nhl_players
+2019-03-02 20:34:35 INFO     Retrieving URL: https://records.nhl.com/site/api/player
+2019-03-02 20:34:47 INFO     Dataframe Shape: (19829, 71)
+2019-03-02 20:35:04 INFO     FINISH initial_load_nhl_players

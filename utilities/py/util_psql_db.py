@@ -8,6 +8,10 @@ class UtilPostgreSQL:
     Class used to represent a PostgreSQL connection to a single database
     """
     
+    """
+    General Functions
+    """
+    
     def __init__(self, host, port, user, pw, db):
         """
         Parameters

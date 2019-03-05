@@ -1,0 +1,14 @@
+2019-03-02 20:55:28 INFO     START delta_load_nhl_players
+2019-03-02 20:55:34 INFO     Retrieving URL: https://records.nhl.com/site/api/player
+2019-03-02 20:55:41 INFO     Dataframe Shape: (19829, 71)
+2019-03-02 20:58:31 INFO     START delta_load_nhl_players
+2019-03-02 20:58:39 INFO     Retrieving URL: https://records.nhl.com/site/api/player
+2019-03-02 20:58:49 INFO     Dataframe Shape: (19829, 71)
+2019-03-02 20:59:02 INFO     FINISH delta_load_nhl_players
+2019-03-02 21:08:26 INFO     START delta_load_nhl_players
+2019-03-02 21:08:34 INFO     Retrieving URL: https://records.nhl.com/site/api/player
+2019-03-02 21:08:48 INFO     Dataframe Shape: (19829, 71)
+2019-03-02 21:16:13 INFO     START delta_load_nhl_players
+2019-03-02 21:16:21 INFO     Retrieving URL: https://records.nhl.com/site/api/player
+2019-03-02 21:16:38 INFO     Dataframe Shape: (19829, 71)
+2019-03-02 21:17:12 INFO     FINISH delta_load_nhl_players
